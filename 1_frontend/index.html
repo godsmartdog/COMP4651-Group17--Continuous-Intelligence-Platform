@@ -3,144 +3,146 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GitHub Continuous Intelligence Platform | COMP4651 Grp 17</title>
+  <title>My Dashboard | GitHub Continuous Intelligence</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="./css/styles.css" />
+  <script src="./js/auth.js"></script>
+  <script>
+    const CURRENT_USER = requireAuth();
+  </script>
 </head>
 <body class="min-h-screen p-6">
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- Top Header (Part 1: Architecture & Status) -->
+    <!-- User Top Header -->
     <header class="glass-card p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
-          <span>COMP4651 Cloud Computing & Big Data Systems • Group 17</span>
+      <div class="flex items-center gap-4">
+        <img id="header-avatar" src="https://github.com/identicons/default.png"
+          onerror="this.src='https://github.com/identicons/default.png'"
+          class="w-12 h-12 rounded-full border-2 border-blue-400 shadow-md" alt="Avatar" />
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-blue-400">COMP4651 Lakehouse</span>
+            <span id="footprint-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30"></span>
+          </div>
+          <h1 class="text-2xl font-extrabold text-white mt-0.5">
+            Welcome back, <span id="header-username" class="text-blue-400"></span>
+          </h1>
+          <p id="header-role" class="text-xs text-slate-400 mt-0.5"></p>
         </div>
-        <h1 class="text-2xl md:text-3xl font-extrabold text-white mt-1">
-          GitHub Continuous Intelligence Lakehouse
-        </h1>
-        <p class="text-xs text-slate-400 mt-0.5">
-          Medallion Architecture: Bronze (GH Archive JSON) → Silver (Spark Partitioned Parquet) → Gold (Incremental State + ML)
-        </p>
       </div>
-      <div class="flex flex-col items-end gap-2">
-        <div id="connection-status">Checking pipeline status...</div>
-        <span id="last-updated" class="text-xs text-slate-400 font-mono"></span>
+
+      <div class="flex items-center gap-4">
+        <div class="text-right hidden sm:block">
+          <div id="connection-status">Checking status...</div>
+          <div id="last-updated" class="text-xs text-slate-400 font-mono mt-1"></div>
+        </div>
+        <button onclick="signOut()"
+          class="bg-slate-800 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40 border border-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl transition">
+          Sign Out
+        </button>
       </div>
     </header>
 
-    <!-- 4 KPI Cards -->
+    <!-- User KPI Cards -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="glass-card p-4">
-        <div class="text-xs text-slate-400 uppercase font-semibold">Events Ingested (24h)</div>
-        <div id="kpi-events" class="text-2xl font-extrabold text-white mt-1">--</div>
-        <div class="text-xs text-blue-400 mt-1">Active Repos: <span id="kpi-repos" class="font-bold">--</span></div>
+      <div class="glass-card p-4 border-l-4 border-blue-500">
+        <div class="text-xs text-slate-400 uppercase font-semibold">My Subscribed Stream Events</div>
+        <div id="kpi-user-events" class="text-2xl font-extrabold text-white mt-1">--</div>
+        <div class="text-xs text-blue-400 mt-1">Filtered from <span id="kpi-events">--</span> global events</div>
       </div>
-      <div class="glass-card p-4">
-        <div class="text-xs text-slate-400 uppercase font-semibold">Bot & Noise Filtered (Silver)</div>
-        <div id="kpi-bots" class="text-2xl font-extrabold text-amber-400 mt-1">--</div>
-        <div class="text-xs text-slate-400 mt-1">Deduplicated by deterministic event_id</div>
+      <div class="glass-card p-4 border-l-4 border-amber-500">
+        <div class="text-xs text-slate-400 uppercase font-semibold">My Starred / Watchlist</div>
+        <div id="kpi-watchlist-count" class="text-2xl font-extrabold text-amber-400 mt-1">0 Repos</div>
+        <div class="text-xs text-slate-400 mt-1">Synced from GitHub + Click ★ below</div>
       </div>
-      <div class="glass-card p-4">
+      <div class="glass-card p-4 border-l-4 border-emerald-500">
         <div class="text-xs text-slate-400 uppercase font-semibold">Incremental Batch Latency</div>
         <div id="kpi-latency" class="text-2xl font-extrabold text-emerald-400 mt-1">--</div>
-        <div class="text-xs text-emerald-300 mt-1">Benchmark: <span id="kpi-speedup" class="font-bold">--</span> vs Full Scan</div>
+        <div class="text-xs text-emerald-300 mt-1"><span id="kpi-speedup">--</span> vs Full Scan</div>
       </div>
-      <div class="glass-card p-4">
-        <div class="text-xs text-slate-400 uppercase font-semibold">ML Detection Engine</div>
-        <div class="text-2xl font-extrabold text-purple-400 mt-1">Z-Score + MLlib</div>
-        <div class="text-xs text-slate-400 mt-1">K-Means Clustering & 7d GBT Forecast</div>
+      <div class="glass-card p-4 border-l-4 border-purple-500">
+        <div class="text-xs text-slate-400 uppercase font-semibold">Bot Traffic Stripped</div>
+        <div id="kpi-bots" class="text-2xl font-extrabold text-purple-400 mt-1">--</div>
+        <div class="text-xs text-slate-400 mt-1">Spark Silver Deduplication</div>
       </div>
     </section>
 
-    <!-- Main Grid: Leaderboard (Left 7 cols) + ML Forecast Chart (Right 5 cols) -->
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <!-- Part 4: Emerging Repo Leaderboard -->
-      <div class="lg:col-span-7 glass-card p-5 flex flex-col justify-between">
+    <!-- Personalized Spark MLlib ALS Recommendations -->
+    <section class="glass-card p-5 border border-purple-500/30">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
         <div>
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <span class="text-xs font-bold uppercase text-purple-400">Part 4 • Emerging Repository Detection</span>
-              <h2 class="text-lg font-bold text-white">Breakout Repositories Leaderboard (Click Row to Inspect)</h2>
-            </div>
-            <div class="flex gap-2">
-              <input id="repo-search" type="text" placeholder="Search repo or lang..."
-                class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500" />
-              <select id="cluster-filter"
-                class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
-                <option value="ALL">All ML Clusters</option>
-                <option value="Viral Breakout">Viral Breakout</option>
-                <option value="High Momentum">High Momentum</option>
-                <option value="Steady Mature">Steady Mature</option>
-                <option value="Bot / Spam Anomaly">Bot / Spam Anomaly</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="border-b border-slate-700 text-slate-400 uppercase">
-                  <th class="py-2.5 px-4">Rank</th>
-                  <th class="py-2.5 px-4">Repository</th>
-                  <th class="py-2.5 px-4 text-right">24h Stars</th>
-                  <th class="py-2.5 px-4 text-right">7d Baseline</th>
-                  <th class="py-2.5 px-4 text-right">Momentum Z</th>
-                  <th class="py-2.5 px-4 text-center">ML Cluster</th>
-                  <th class="py-2.5 px-4 text-right">7d ML Pred</th>
-                </tr>
-              </thead>
-              <tbody id="leaderboard-body"></tbody>
-            </table>
-          </div>
+          <span class="text-xs font-bold uppercase text-purple-400">Part 4 • Spark MLlib ALS Collaborative Filtering</span>
+          <h2 class="text-base font-bold text-white">Top Breakout Recommendations Matched to Your GH Archive Footprint</h2>
         </div>
-        <div class="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400 flex justify-between">
-          <span>Formula: <code class="text-purple-300">Z = (Activity_24h - EWMA_7d) / (σ_7d + α) × log(1 + UniqueActors)</code></span>
-          <span>Serving Layer: PostgreSQL Gold Table</span>
+        <div class="flex gap-2">
+          <button id="btn-my-stack" onclick="setFeedScope('MY_STACK')" class="text-xs font-bold px-3 py-1 rounded-lg bg-blue-600 text-white">
+            My Stack Feed
+          </button>
+          <button id="btn-watchlist" onclick="setFeedScope('WATCHLIST')" class="text-xs font-bold px-3 py-1 rounded-lg bg-slate-800 text-slate-300">
+            ★ My Watchlist
+          </button>
+          <button id="btn-global" onclick="setFeedScope('GLOBAL')" class="text-xs font-bold px-3 py-1 rounded-lg bg-slate-800 text-slate-300">
+            Global Stream
+          </button>
+        </div>
+      </div>
+      <div id="als-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- Leaderboard + ML Forecast Chart -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-7 glass-card p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <span class="text-xs font-bold uppercase text-blue-400">Interactive Feed</span>
+            <h2 id="table-heading" class="text-lg font-bold text-white">Emerging Repositories in Your Stack</h2>
+          </div>
+          <input id="repo-search" type="text" placeholder="Search repository..."
+            class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500" />
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-700 text-slate-400 uppercase">
+                <th class="py-2.5 px-3">★</th>
+                <th class="py-2.5 px-3">Repository</th>
+                <th class="py-2.5 px-3 text-right">24h Stars</th>
+                <th class="py-2.5 px-3 text-right">Momentum Z</th>
+                <th class="py-2.5 px-3 text-center">ML Cluster</th>
+                <th class="py-2.5 px-3 text-right">7d ML Pred</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body"></tbody>
+          </table>
         </div>
       </div>
 
-      <!-- Part 4: Interactive Repo Trajectory & ML Forecast -->
       <div class="lg:col-span-5 glass-card p-5 flex flex-col justify-between">
         <div>
-          <span class="text-xs font-bold uppercase text-blue-400">Interactive Time-Series & ML Forecast</span>
+          <span class="text-xs font-bold uppercase text-purple-400">7-Day Spark MLlib GBT Trajectory</span>
           <h2 id="selected-repo-title" class="text-lg font-bold text-white mt-0.5">Select a repository</h2>
           <p id="selected-repo-subtitle" class="text-xs text-slate-400 mb-4"></p>
         </div>
         <div class="h-64 relative">
           <canvas id="forecastChart"></canvas>
         </div>
-        <div class="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400">
-          Solid blue line shows historical Silver/Gold window counts; dashed purple line shows <strong>Spark MLlib Gradient Boosted Trees (GBT)</strong> 7-day star growth prediction.
-        </div>
       </div>
     </section>
 
-    <!-- Bottom Grid: Part 2 Data Analysis + Part 3 System Benchmarks -->
+    <!-- Part 2 Data Analysis & Part 3 System Benchmarks -->
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Part 2: Exploratory Data Analysis -->
       <div class="glass-card p-5">
-        <span class="text-xs font-bold uppercase text-emerald-400">Part 2 • Exploratory Data Analysis (GH Archive Stream)</span>
-        <h2 class="text-lg font-bold text-white mb-1">Event Type Volume Share & Signal Weights</h2>
-        <p class="text-xs text-slate-400 mb-4">
-          PushEvents dominate raw volume (52%), whereas WatchEvents (Stars) and Forks carry higher analytical weights (3.0x / 2.5x) for breakout detection.
-        </p>
-        <div class="h-56 relative">
-          <canvas id="eventDistChart"></canvas>
-        </div>
+        <span class="text-xs font-bold uppercase text-emerald-400">Part 2 • Exploratory Data Analysis</span>
+        <h2 class="text-lg font-bold text-white mb-3">GH Archive Event Distribution &amp; Signal Weights</h2>
+        <div class="h-56 relative"><canvas id="eventDistChart"></canvas></div>
       </div>
-
-      <!-- Part 3: Engineering Challenges & Benchmarks -->
       <div class="glass-card p-5">
-        <span class="text-xs font-bold uppercase text-amber-400">Part 3 • Systems Challenge & Spark Optimization Benchmark</span>
-        <h2 class="text-lg font-bold text-white mb-1">Full Historical Recompute vs. Incremental State Merge</h2>
-        <p class="text-xs text-slate-400 mb-4">
-          Merging hourly Silver Parquet deltas into rolling Gold state achieves O(1) update cost and up to <strong>65.5x speedup</strong> over 30-day raw JSON batch scans.
-        </p>
-        <div class="h-56 relative">
-          <canvas id="benchmarkChart"></canvas>
-        </div>
+        <span class="text-xs font-bold uppercase text-amber-400">Part 3 • Incremental vs. Batch Benchmark</span>
+        <h2 class="text-lg font-bold text-white mb-3">Spark Execution Latency Comparison</h2>
+        <div class="h-56 relative"><canvas id="benchmarkChart"></canvas></div>
       </div>
     </section>
 

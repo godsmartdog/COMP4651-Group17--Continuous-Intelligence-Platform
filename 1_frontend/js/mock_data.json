@@ -6,7 +6,7 @@
     "incremental_latency_min": "2.1 min",
     "speedup_factor": "65.5x Faster",
     "parquet_compression_saved": "78.2%",
-    "last_batch_hour": "2026-11-11 16:00 UTC"
+    "last_batch_hour": "2026-11-11 10:00 UTC"
   },
   "event_distribution": {
     "labels": ["PushEvent (1.0x)", "WatchEvent / Star (3.0x)", "PullRequestEvent (2.5x)", "IssuesEvent (1.5x)", "ForkEvent (2.5x)"],

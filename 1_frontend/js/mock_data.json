@@ -1,0 +1,106 @@
+{
+  "kpis": {
+    "total_events_processed": "4,820,500",
+    "active_repos_tracked": "142,380",
+    "bot_traffic_filtered_pct": "16.4%",
+    "incremental_latency_min": "2.1 min",
+    "speedup_factor": "65.5x Faster",
+    "parquet_compression_saved": "78.2%",
+    "last_batch_hour": "2026-11-11 16:00 UTC"
+  },
+  "event_distribution": {
+    "labels": ["PushEvent (1.0x)", "WatchEvent / Star (3.0x)", "PullRequestEvent (2.5x)", "IssuesEvent (1.5x)", "ForkEvent (2.5x)"],
+    "shares": [52, 18, 14, 9, 7]
+  },
+  "benchmarks": {
+    "horizons": ["24 Hours (1 Day)", "168 Hours (7 Days)", "720 Hours (30 Days)"],
+    "full_recompute_min": [14.2, 89.5, 380.0],
+    "incremental_pipeline_min": [2.1, 3.4, 5.8]
+  },
+  "emerging_repos": [
+    {
+      "rank": 1,
+      "repo_name": "deepseek-ai/DeepSeek-MoE-V4",
+      "language": "Python / CUDA",
+      "stars_24h": 2840,
+      "forks_24h": 410,
+      "pushes_24h": 68,
+      "baseline_avg_7d": 145.0,
+      "momentum_z_score": 18.42,
+      "ml_cluster": "Viral Breakout",
+      "predicted_stars_7d": 14200,
+      "hourly_history": [120, 185, 310, 490, 820, 1450, 2840],
+      "ml_forecast": [3600, 5100, 7400, 9800, 12100, 14200]
+    },
+    {
+      "rank": 2,
+      "repo_name": "apache/spark-lakehouse-agent",
+      "language": "Scala / Python",
+      "stars_24h": 1190,
+      "forks_24h": 215,
+      "pushes_24h": 94,
+      "baseline_avg_7d": 82.5,
+      "momentum_z_score": 14.15,
+      "ml_cluster": "Viral Breakout",
+      "predicted_stars_7d": 6800,
+      "hourly_history": [60, 95, 180, 320, 540, 810, 1190],
+      "ml_forecast": [1650, 2400, 3500, 4600, 5700, 6800]
+    },
+    {
+      "rank": 3,
+      "repo_name": "pydantic/fastapi-rust-core",
+      "language": "Rust / Python",
+      "stars_24h": 875,
+      "forks_24h": 92,
+      "pushes_24h": 41,
+      "baseline_avg_7d": 64.0,
+      "momentum_z_score": 11.68,
+      "ml_cluster": "High Momentum",
+      "predicted_stars_7d": 4950,
+      "hourly_history": [45, 70, 130, 240, 410, 620, 875],
+      "ml_forecast": [1200, 1850, 2600, 3400, 4150, 4950]
+    },
+    {
+      "rank": 4,
+      "repo_name": "vercel/next-edge-runtime",
+      "language": "TypeScript",
+      "stars_24h": 640,
+      "forks_24h": 128,
+      "pushes_24h": 115,
+      "baseline_avg_7d": 110.2,
+      "momentum_z_score": 8.94,
+      "ml_cluster": "High Momentum",
+      "predicted_stars_7d": 3300,
+      "hourly_history": [90, 130, 190, 280, 390, 510, 640],
+      "ml_forecast": [920, 1350, 1820, 2340, 2810, 3300]
+    },
+    {
+      "rank": 5,
+      "repo_name": "microsoft/vscode",
+      "language": "TypeScript",
+      "stars_24h": 490,
+      "forks_24h": 165,
+      "pushes_24h": 340,
+      "baseline_avg_7d": 465.0,
+      "momentum_z_score": 1.12,
+      "ml_cluster": "Steady Mature",
+      "predicted_stars_7d": 3250,
+      "hourly_history": [450, 470, 460, 480, 475, 485, 490],
+      "ml_forecast": [980, 1450, 1920, 2380, 2810, 3250]
+    },
+    {
+      "rank": 6,
+      "repo_name": "crypto-auto-mirror/bot-farm-repo",
+      "language": "Shell",
+      "stars_24h": 310,
+      "forks_24h": 4,
+      "pushes_24h": 1420,
+      "baseline_avg_7d": 12.0,
+      "momentum_z_score": 0.45,
+      "ml_cluster": "Bot / Spam Anomaly",
+      "predicted_stars_7d": 180,
+      "hourly_history": [5, 10, 300, 305, 308, 310, 310],
+      "ml_forecast": [280, 250, 220, 200, 190, 180]
+    }
+  ]
+}

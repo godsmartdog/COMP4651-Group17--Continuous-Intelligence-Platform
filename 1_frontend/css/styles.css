@@ -1,26 +1,151 @@
+:root {
+  --bg-canvas: #09090b;
+  --bg-panel: #111318;
+  --bg-elevated: #171a21;
+  --border-subtle: #222630;
+  --border-hover: #343a46;
+  --accent: #6366f1;
+}
+
 body {
-  background-color: #0b0f19;
-  color: #f1f5f9;
+  background-color: var(--bg-canvas);
+  color: #e4e4e7;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-.glass-card {
-  background: rgba(30, 41, 59, 0.75);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  border-radius: 1rem;
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.saas-panel {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+}
+
+.saas-input {
+  background-color: #09090b;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  color: #f4f4f5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.saas-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.saas-btn-secondary {
+  background-color: #14171f;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  color: #d4d4d8;
+  transition: all 0.15s ease;
+}
+
+.saas-btn-secondary:hover {
+  background-color: #1c202a;
+  border-color: var(--border-hover);
+  color: #ffffff;
+}
+
+/* Sidebar Navigation */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #a1a1aa;
+  transition: all 0.12s ease;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background-color: #161922;
+  color: #f4f4f5;
+}
+
+.nav-item.active {
+  background-color: #1c202c;
+  color: #ffffff;
+}
+
+/* Data Table Rows */
 .repo-row {
-  transition: all 0.15s ease-in-out;
+  border-bottom: 1px solid #1a1d26;
+  transition: background-color 0.12s ease;
   cursor: pointer;
 }
 
 .repo-row:hover {
-  background-color: rgba(59, 130, 246, 0.12);
+  background-color: #161922;
 }
 
 .repo-row.active-row {
-  background-color: rgba(59, 130, 246, 0.22);
-  border-left: 4px solid #3b82f6;
+  background-color: rgba(99, 102, 241, 0.09);
+}
+
+/* Discord-Style Onboarding Pill Tags */
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background-color: #151821;
+  border: 1.5px solid #262b38;
+  color: #d4d4d8;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.14s ease;
+}
+
+.tag-pill:hover {
+  border-color: #3f475a;
+  background-color: #1a1e29;
+}
+
+.tag-pill.selected {
+  background-color: rgba(99, 102, 241, 0.16);
+  border-color: #6366f1;
+  color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+}
+
+/* Signal Goal Cards in Onboarding */
+.goal-card {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.65rem;
+  background-color: #151821;
+  border: 1.5px solid #262b38;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.goal-card:hover {
+  border-color: #3f475a;
+}
+
+.goal-card.selected {
+  background-color: rgba(99, 102, 241, 0.12);
+  border-color: #6366f1;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 3px;
 }

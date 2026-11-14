@@ -1,79 +1,209 @@
 let forecastChartInstance = null;
+let eventChartInstance = null;
+let benchmarkChartInstance = null;
 let globalDashboardData = null;
 let activeUser = CURRENT_USER;
 let currentScope = "MY_STACK";
 
+let tempSelectedTags = new Set();
+let tempSelectedGoals = new Set();
+
 function getClusterBadge(cluster) {
   const styles = {
-    "Viral Breakout": "bg-purple-500/20 text-purple-300 border-purple-500/40",
-    "High Momentum": "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-    "Steady Mature": "bg-blue-500/20 text-blue-300 border-blue-500/40",
-    "Bot / Spam Anomaly": "bg-red-500/20 text-red-300 border-red-500/40"
+    "Viral Breakout": "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
+    "High Momentum": "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+    "Steady Mature": "bg-zinc-800 text-zinc-300 border-zinc-700",
+    "Bot Anomaly": "bg-red-500/15 text-red-300 border-red-500/30"
   };
-  return `<span class="px-2 py-0.5 text-xs font-semibold rounded-full border ${styles[cluster] || "border-slate-600 text-slate-300"}">${cluster}</span>`;
+  return `<span class="px-2 py-0.5 text-[11px] font-medium rounded-md border ${styles[cluster] || styles["Steady Mature"]}">${cluster}</span>`;
 }
 
-// Ensures any real GitHub starred repos from Sign-In also appear in the user's Watchlist tab
-function mergeRealGitHubWatchlistIntoRepos(data) {
+// ============================================================================
+// DISCORD-STYLE ONBOARDING MODAL LOGIC
+// ============================================================================
+function openOnboardingModal() {
+  tempSelectedTags = new Set(activeUser.selected_tags?.length ? activeUser.selected_tags : ["ai-llm", "python"]);
+  tempSelectedGoals = new Set(activeUser.signal_goals?.length ? activeUser.signal_goals : ["viral"]);
+
+  renderOnboardingOptions();
+  document.getElementById("onboarding-modal").classList.remove("hidden");
+}
+
+function renderOnboardingOptions() {
+  const tagsGrid = document.getElementById("onboarding-tags-grid");
+  tagsGrid.innerHTML = AVAILABLE_TAGS.map(tag => {
+    const isSelected = tempSelectedTags.has(tag.id);
+    return `
+      <button type="button" onclick="toggleTempTag('${tag.id}')"
+        class="tag-pill ${isSelected ? "selected" : ""}">
+        <span>${tag.icon}</span>
+        <span>${tag.label}</span>
+        ${isSelected ? '<span class="text-indigo-300 text-xs ml-0.5">✓</span>' : ""}
+      </button>
+    `;
+  }).join("");
+
+  const goalsGrid = document.getElementById("onboarding-goals-grid");
+  goalsGrid.innerHTML = SIGNAL_GOALS.map(g => {
+    const isSelected = tempSelectedGoals.has(g.id);
+    return `
+      <div onclick="toggleTempGoal('${g.id}')" class="goal-card ${isSelected ? "selected" : ""}">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-zinc-100">${g.title}</span>
+          <span class="text-xs ${isSelected ? "text-indigo-400" : "text-zinc-600"}">${isSelected ? "●" : "○"}</span>
+        </div>
+        <p class="text-[11px] text-zinc-400 mt-1 leading-snug">${g.desc}</p>
+      </div>
+    `;
+  }).join("");
+
+  const matchedCount = (globalDashboardData?.emerging_repos || []).filter(r =>
+    (r.tags || []).some(t => tempSelectedTags.has(t))
+  ).length;
+  document.getElementById("onboarding-match-preview").textContent =
+    `${tempSelectedTags.size} tags · Matches ${matchedCount} breakout repos`;
+}
+
+function toggleTempTag(tagId) {
+  if (tempSelectedTags.has(tagId)) tempSelectedTags.delete(tagId);
+  else tempSelectedTags.add(tagId);
+  renderOnboardingOptions();
+}
+
+function toggleTempGoal(goalId) {
+  if (tempSelectedGoals.has(goalId)) tempSelectedGoals.delete(goalId);
+  else tempSelectedGoals.add(goalId);
+  renderOnboardingOptions();
+}
+
+function saveOnboardingChoices() {
+  const chosenTags = tempSelectedTags.size > 0 ? Array.from(tempSelectedTags) : ["ai-llm", "data-spark"];
+  const chosenGoals = tempSelectedGoals.size > 0 ? Array.from(tempSelectedGoals) : ["viral"];
+
+  activeUser = completeUserOnboarding(chosenTags, chosenGoals);
+  document.getElementById("onboarding-modal").classList.add("hidden");
+  refreshAllUserViews();
+}
+
+function skipOnboardingDefault() {
+  activeUser = completeUserOnboarding(["ai-llm", "data-spark", "python"], ["viral"]);
+  document.getElementById("onboarding-modal").classList.add("hidden");
+  refreshAllUserViews();
+}
+
+// ============================================================================
+// WORKSPACE RENDERING
+// ============================================================================
+function mergeWatchlistIntoRepos(data) {
   const existingNames = new Set(data.emerging_repos.map(r => r.repo_name));
   (activeUser.watchlist || []).forEach((repoName, i) => {
     if (!existingNames.has(repoName)) {
       data.emerging_repos.push({
         rank: data.emerging_repos.length + 1,
         repo_name: repoName,
-        language: activeUser.preferred_langs[0] || "GitHub Starred",
-        stars_24h: 45 + i * 18,
-        forks_24h: 8 + i * 3,
-        pushes_24h: 19 + i * 5,
-        baseline_avg_7d: 14.0,
-        momentum_z_score: +(6.8 - i * 0.7).toFixed(2),
+        description: "Synced directly from your public GitHub starred repositories.",
+        language: "GitHub Starred",
+        tags: activeUser.selected_tags?.length ? [activeUser.selected_tags[0]] : ["python"],
+        signal_type: "viral",
+        stars_24h: 64 + i * 22,
+        forks_24h: 11 + i * 4,
+        pushes_24h: 24 + i * 6,
+        baseline_avg_7d: 18.5,
+        momentum_z_score: +(7.4 - i * 0.6).toFixed(2),
         ml_cluster: "High Momentum",
-        predicted_stars_7d: 320 + i * 90,
-        hourly_history: [12, 18, 24, 29, 35, 41, 45 + i * 18],
-        ml_forecast: [85, 130, 180, 230, 275, 320 + i * 90]
+        predicted_stars_7d: 420 + i * 110,
+        hourly_history: [15, 22, 30, 38, 46, 55, 64 + i * 22],
+        ml_forecast: [95, 150, 210, 280, 350, 420 + i * 110]
       });
     }
   });
 }
 
-function renderUserHeaderAndKPIs(data) {
-  if (activeUser.avatar) {
-    document.getElementById("header-avatar").src = activeUser.avatar;
-  }
-  document.getElementById("header-username").textContent = `@${activeUser.username}`;
-  document.getElementById("header-role").textContent =
-    `${activeUser.role} • Stack: ${activeUser.preferred_langs.join(" | ")}`;
-  document.getElementById("footprint-badge").textContent =
-    activeUser.footprint_status || "GH Archive Footprint Ready";
+function computeRepoAffinity(repo) {
+  const userTags = activeUser.selected_tags || [];
+  const userGoals = activeUser.signal_goals || [];
+  const overlap = (repo.tags || []).filter(t => userTags.includes(t)).length;
+  const goalBonus = userGoals.includes(repo.signal_type) ? 0.5 : 0;
+  return overlap + goalBonus;
+}
 
-  document.getElementById("kpi-user-events").textContent = activeUser.events_quota;
+function renderSidebarAndHeader(data) {
+  if (activeUser.avatar) {
+    document.getElementById("sidebar-avatar").src = activeUser.avatar;
+  }
+  document.getElementById("sidebar-username").textContent = `@${activeUser.username}`;
+  document.getElementById("sidebar-footprint").textContent = activeUser.footprint_status || "Active";
+  document.getElementById("sidebar-watch-count").textContent = (activeUser.watchlist || []).length;
+  document.getElementById("cold-start-pill").textContent = activeUser.footprint_status || "";
+
+  const tagMap = Object.fromEntries(AVAILABLE_TAGS.map(t => [t.id, t]));
+  const userTags = activeUser.selected_tags || [];
+  document.getElementById("sidebar-tags").innerHTML = userTags.map(id => {
+    const t = tagMap[id] || { icon: "#", label: id };
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-[#161922] border border-[#252a36] text-zinc-300">
+      <span>${t.icon}</span><span>${t.label}</span>
+    </span>`;
+  }).join("");
+
+  document.getElementById("kpi-user-events").textContent = activeUser.events_quota || "1,290,400";
   document.getElementById("kpi-events").textContent = data.kpis.total_events_processed;
-  document.getElementById("kpi-watchlist-count").textContent = `${activeUser.watchlist.length} Repos`;
   document.getElementById("kpi-bots").textContent = data.kpis.bot_traffic_filtered_pct;
   document.getElementById("kpi-latency").textContent = data.kpis.incremental_latency_min;
-  document.getElementById("kpi-speedup").textContent = data.kpis.speedup_factor;
-  document.getElementById("last-updated").textContent = `Batch: ${data.kpis.last_batch_hour}`;
+  document.getElementById("kpi-speedup").textContent = `${data.kpis.speedup_factor} faster`;
+  document.getElementById("kpi-tag-count").textContent = `${userTags.length} Active`;
+  document.getElementById("last-updated").textContent = `Batch ${data.kpis.last_batch_hour}`;
 
-  const matchedRepos = data.emerging_repos.filter(r => activeUser.preferred_langs.includes(r.language));
-  const alsContainer = document.getElementById("als-cards");
-  alsContainer.innerHTML = matchedRepos.slice(0, 3).map((r, i) => `
-    <div onclick="selectRepositoryByName('${r.repo_name}')" class="cursor-pointer bg-slate-900/90 border border-slate-700/80 rounded-xl p-3.5 hover:border-purple-400 transition">
-      <div class="flex items-center justify-between mb-1">
-        <span class="font-bold text-sm text-white truncate pr-2">${r.repo_name}</span>
-        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 shrink-0">${(98.4 - i * 3.7).toFixed(1)}% Match</span>
+  const rankedForUser = [...data.emerging_repos]
+    .map(r => ({ ...r, affinity: computeRepoAffinity(r) }))
+    .filter(r => userTags.length === 0 || r.affinity > 0)
+    .sort((a, b) => (b.affinity * 10 + b.momentum_z_score) - (a.affinity * 10 + a.momentum_z_score));
+
+  const topRecs = (rankedForUser.length ? rankedForUser : data.emerging_repos).slice(0, 3);
+  const tagLabels = Object.fromEntries(AVAILABLE_TAGS.map(t => [t.id, t.label]));
+
+  document.getElementById("als-cards").innerHTML = topRecs.map((r, i) => {
+    const matchedTagNames = (r.tags || [])
+      .filter(t => userTags.includes(t))
+      .map(t => tagLabels[t] || t);
+    const matchPct = Math.min(99.4, 91.5 + r.affinity * 3.2 - i * 1.4).toFixed(1);
+
+    return `
+      <div onclick="selectRepositoryByName('${r.repo_name}')"
+        class="saas-panel p-4 cursor-pointer hover:border-indigo-500/60 transition flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-semibold text-zinc-100 truncate">${r.repo_name}</span>
+            <span class="text-[11px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded shrink-0">
+              ${matchPct}% match
+            </span>
+          </div>
+          <p class="text-[11px] text-zinc-400 mt-1.5 line-clamp-2 leading-relaxed">${r.description || r.language}</p>
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-2.5 border-t border-[#1c2029] text-[11px]">
+          <span class="text-zinc-500 truncate">${matchedTagNames.length ? "Matched: " + matchedTagNames.join(", ") : r.language}</span>
+          <span class="font-mono text-emerald-400 shrink-0">+${r.stars_24h} ★</span>
+        </div>
       </div>
-      <div class="text-xs text-slate-400">${r.language} • +${r.stars_24h} stars (24h)</div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
 function getScopedRepos() {
   const query = document.getElementById("repo-search").value.toLowerCase();
+  const userTags = activeUser.selected_tags || [];
+
   return globalDashboardData.emerging_repos.filter(r => {
-    const matchesSearch = r.repo_name.toLowerCase().includes(query) || r.language.toLowerCase().includes(query);
+    const matchesSearch =
+      r.repo_name.toLowerCase().includes(query) ||
+      r.language.toLowerCase().includes(query);
     if (!matchesSearch) return false;
-    if (currentScope === "MY_STACK") return activeUser.preferred_langs.includes(r.language);
-    if (currentScope === "WATCHLIST") return activeUser.watchlist.includes(r.repo_name);
+
+    if (currentScope === "MY_STACK") {
+      return userTags.length === 0 || (r.tags || []).some(t => userTags.includes(t));
+    }
+    if (currentScope === "WATCHLIST") {
+      return (activeUser.watchlist || []).includes(r.repo_name);
+    }
     return true;
   });
 }
@@ -81,27 +211,26 @@ function getScopedRepos() {
 function setFeedScope(scope) {
   currentScope = scope;
   const titles = {
-    MY_STACK: "Emerging Repositories in Your Subscribed Stack",
-    WATCHLIST: `★ Saved & GitHub Starred Watchlist (@${activeUser.username})`,
-    GLOBAL: "All Global Breakout Repositories"
+    MY_STACK: "For You · Personalized Tag & ALS Feed",
+    GLOBAL: "Global Stream · All Breakout Repositories",
+    WATCHLIST: `Watchlist · Saved Repositories (@${activeUser.username})`
   };
+  document.getElementById("page-title").textContent = titles[scope];
   document.getElementById("table-heading").textContent = titles[scope];
 
-  ["MY_STACK", "WATCHLIST", "GLOBAL"].forEach(s => {
-    const btnId = s === "MY_STACK" ? "btn-my-stack" : s === "WATCHLIST" ? "btn-watchlist" : "btn-global";
-    document.getElementById(btnId).className = s === scope
-      ? "text-xs font-bold px-3 py-1 rounded-lg bg-blue-600 text-white"
-      : "text-xs font-bold px-3 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white";
+  ["MY_STACK", "GLOBAL", "WATCHLIST"].forEach(s => {
+    const el = document.getElementById(`nav-${s}`);
+    if (el) el.classList.toggle("active", s === scope);
   });
 
-  const filtered = renderLeaderboard();
-  if (filtered.length > 0) selectRepositoryByName(filtered[0].repo_name);
+  const repos = renderLeaderboard();
+  if (repos.length > 0) selectRepositoryByName(repos[0].repo_name);
 }
 
 function handleStarClick(event, repoName) {
   event.stopPropagation();
   activeUser = toggleWatchlistRepo(repoName);
-  document.getElementById("kpi-watchlist-count").textContent = `${activeUser.watchlist.length} Repos`;
+  document.getElementById("sidebar-watch-count").textContent = activeUser.watchlist.length;
   renderLeaderboard();
 }
 
@@ -111,29 +240,35 @@ function renderLeaderboard() {
   tbody.innerHTML = "";
 
   if (repos.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">No repositories in this view yet.</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="py-10 text-center text-xs text-zinc-500">
+          No matching repositories. <button onclick="openOnboardingModal()" class="text-indigo-400 underline ml-1">Adjust your tags</button>
+        </td>
+      </tr>`;
     return [];
   }
 
   repos.forEach((repo, idx) => {
-    const isStarred = activeUser.watchlist.includes(repo.repo_name);
+    const isStarred = (activeUser.watchlist || []).includes(repo.repo_name);
     const tr = document.createElement("tr");
-    tr.className = `repo-row border-b border-slate-800 ${idx === 0 ? "active-row" : ""}`;
+    tr.className = `repo-row ${idx === 0 ? "active-row" : ""}`;
     tr.dataset.repo = repo.repo_name;
     tr.onclick = () => selectRepositoryByName(repo.repo_name);
 
     tr.innerHTML = `
-      <td class="py-3 px-3">
-        <button onclick="handleStarClick(event, '${repo.repo_name}')" class="text-base ${isStarred ? "text-amber-400" : "text-slate-600 hover:text-amber-300"}">★</button>
+      <td class="py-3 pl-4 pr-2">
+        <button onclick="handleStarClick(event, '${repo.repo_name}')"
+          class="text-sm ${isStarred ? "text-amber-400" : "text-zinc-600 hover:text-zinc-300"}">★</button>
       </td>
       <td class="py-3 px-3">
-        <div class="font-bold text-white">${repo.repo_name}</div>
-        <div class="text-xs text-slate-400">${repo.language}</div>
+        <div class="font-medium text-zinc-100">${repo.repo_name}</div>
+        <div class="text-[11px] text-zinc-500">${repo.language}</div>
       </td>
-      <td class="py-3 px-3 text-right font-mono text-amber-300">+${repo.stars_24h.toLocaleString()}</td>
-      <td class="py-3 px-3 text-right font-mono font-bold text-emerald-400">${repo.momentum_z_score.toFixed(2)}</td>
-      <td class="py-3 px-3 text-center">${getClusterBadge(repo.ml_cluster)}</td>
-      <td class="py-3 px-3 text-right font-mono text-purple-300">+${repo.predicted_stars_7d.toLocaleString()}</td>
+      <td class="py-3 px-3 text-right font-mono text-zinc-200">+${repo.stars_24h.toLocaleString()}</td>
+      <td class="py-3 px-3 text-right font-mono font-medium text-emerald-400">${repo.momentum_z_score.toFixed(2)}</td>
+      <td class="py-3 px-3">${getClusterBadge(repo.ml_cluster)}</td>
+      <td class="py-3 pl-3 pr-4 text-right font-mono text-indigo-300">+${repo.predicted_stars_7d.toLocaleString()}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -149,8 +284,11 @@ function selectRepositoryByName(repoName) {
   if (!repo) return;
 
   document.getElementById("selected-repo-title").textContent = repo.repo_name;
-  document.getElementById("selected-repo-subtitle").textContent =
-    `${repo.language} | Momentum Z: ${repo.momentum_z_score} | 24h Pushes: ${repo.pushes_24h}`;
+  document.getElementById("selected-repo-desc").textContent = repo.description || "Tracked via hourly GH Archive Silver Parquet partitions.";
+  document.getElementById("inspector-lang").textContent = repo.language;
+  document.getElementById("insp-baseline").textContent = `${repo.baseline_avg_7d}/d`;
+  document.getElementById("insp-forks").textContent = `+${repo.forks_24h}`;
+  document.getElementById("insp-pushes").textContent = repo.pushes_24h;
 
   const ctx = document.getElementById("forecastChart").getContext("2d");
   if (forecastChartInstance) forecastChartInstance.destroy();
@@ -164,65 +302,114 @@ function selectRepositoryByName(repoName) {
         {
           label: "Observed Stars",
           data: [...repo.hourly_history, null, null, null, null, null, null],
-          borderColor: "#38bdf8",
-          backgroundColor: "rgba(56, 189, 248, 0.15)",
-          borderWidth: 3,
+          borderColor: "#e4e4e7",
+          backgroundColor: "rgba(228, 228, 231, 0.06)",
+          borderWidth: 2,
+          pointRadius: 2,
           fill: true,
-          tension: 0.35
+          tension: 0.3
         },
         {
-          label: "ML 7-Day Forecast",
+          label: "GBT 7d Forecast",
           data: [null, null, null, null, null, null, repo.hourly_history[6], ...repo.ml_forecast],
-          borderColor: "#c084fc",
-          borderDash: [6, 4],
-          borderWidth: 3,
-          tension: 0.35
+          borderColor: "#818cf8",
+          borderDash: [5, 4],
+          borderWidth: 2,
+          pointRadius: 2,
+          tension: 0.3
         }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: "#cbd5e1" } } },
+      plugins: {
+        legend: { labels: { color: "#a1a1aa", boxWidth: 10, font: { size: 11 } } }
+      },
       scales: {
-        x: { ticks: { color: "#94a3b8" } },
-        y: { ticks: { color: "#94a3b8" } }
+        x: { ticks: { color: "#71717a", font: { size: 10 } }, grid: { color: "#181b22" } },
+        y: { ticks: { color: "#71717a", font: { size: 10 } }, grid: { color: "#181b22" } }
       }
     }
   });
 }
 
 function renderStaticCharts(data) {
-  new Chart(document.getElementById("eventDistChart"), {
+  if (eventChartInstance) eventChartInstance.destroy();
+  eventChartInstance = new Chart(document.getElementById("eventDistChart"), {
     type: "doughnut",
     data: {
       labels: data.event_distribution.labels,
-      datasets: [{ data: data.event_distribution.shares, backgroundColor: ["#3b82f6", "#10b981", "#a855f7", "#ec4899", "#06b6d4"], borderWidth: 0 }]
+      datasets: [{
+        data: data.event_distribution.shares,
+        backgroundColor: ["#6366f1", "#10b981", "#3b82f6", "#f59e0b", "#71717a"],
+        borderColor: "#111318",
+        borderWidth: 2
+      }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { color: "#cbd5e1" } } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "68%",
+      plugins: {
+        legend: { position: "right", labels: { color: "#a1a1aa", boxWidth: 10, font: { size: 11 } } }
+      }
+    }
   });
 
-  new Chart(document.getElementById("benchmarkChart"), {
+  if (benchmarkChartInstance) benchmarkChartInstance.destroy();
+  benchmarkChartInstance = new Chart(document.getElementById("benchmarkChart"), {
     type: "bar",
     data: {
       labels: data.benchmarks.horizons,
       datasets: [
-        { label: "Full Recompute (min)", data: data.benchmarks.full_recompute_min, backgroundColor: "rgba(239, 68, 68, 0.75)", borderRadius: 6 },
-        { label: "Incremental Pipeline (min)", data: data.benchmarks.incremental_pipeline_min, backgroundColor: "rgba(16, 185, 129, 0.85)", borderRadius: 6 }
+        {
+          label: "Full Batch Rescan (min)",
+          data: data.benchmarks.full_recompute_min,
+          backgroundColor: "#27272a",
+          borderColor: "#3f3f46",
+          borderWidth: 1,
+          borderRadius: 4
+        },
+        {
+          label: "Incremental Lakehouse (min)",
+          data: data.benchmarks.incremental_pipeline_min,
+          backgroundColor: "#6366f1",
+          borderRadius: 4
+        }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#cbd5e1" } } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#a1a1aa", boxWidth: 10, font: { size: 11 } } }
+      },
+      scales: {
+        x: { ticks: { color: "#71717a", font: { size: 11 } }, grid: { display: false } },
+        y: { ticks: { color: "#71717a", font: { size: 10 } }, grid: { color: "#181b22" } }
+      }
+    }
   });
+}
+
+function refreshAllUserViews() {
+  renderSidebarAndHeader(globalDashboardData);
+  const repos = renderLeaderboard();
+  if (repos.length > 0) selectRepositoryByName(repos[0].repo_name);
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   if (!activeUser) return;
   globalDashboardData = await loadDashboardData(activeUser.username);
-  mergeRealGitHubWatchlistIntoRepos(globalDashboardData);
-  renderUserHeaderAndKPIs(globalDashboardData);
-  const initialRepos = renderLeaderboard();
+  mergeWatchlistIntoRepos(globalDashboardData);
   renderStaticCharts(globalDashboardData);
-  if (initialRepos.length > 0) selectRepositoryByName(initialRepos[0].repo_name);
+  refreshAllUserViews();
+
+  // Trigger Discord-style onboarding automatically for any first-time / cold-start user
+  if (!activeUser.onboarding_completed) {
+    openOnboardingModal();
+  }
 
   document.getElementById("repo-search").addEventListener("input", renderLeaderboard);
 });

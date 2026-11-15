@@ -1,23 +1,22 @@
-const SESSION_KEY = "cip_active_user_v2";
-const CUSTOM_USERS_KEY = "cip_registered_users_v2";
+const SESSION_KEY = "cip_active_user_v3";
+const CUSTOM_USERS_KEY = "cip_registered_users_v3";
 
-// Industry-standard tag taxonomy (shared between Onboarding Modal & Repo Filtering)
 const AVAILABLE_TAGS = [
-  { id: "ai-llm", label: "AI & LLMs", icon: "✦" },
-  { id: "data-spark", label: "Data & Spark", icon: "⚡" },
-  { id: "python", label: "Python", icon: "🐍" },
-  { id: "rust-systems", label: "Rust & Systems", icon: "⚙" },
-  { id: "typescript-web", label: "TypeScript & Web", icon: "◈" },
-  { id: "cloud-go", label: "Cloud-Native & Go", icon: "☁" },
-  { id: "security-bots", label: "SecOps & Anomaly", icon: "🛡" },
-  { id: "devtools", label: "Developer Tools", icon: "⌘" }
+  { id: "ai-llm", slug: "ai-and-llms", label: "AI & LLMs", desc: "Inference engines, agents & CUDA kernels", icon: "✦" },
+  { id: "data-spark", slug: "data-engineering", label: "Data & Spark", desc: "Lakehouses, Parquet, streaming & SQL", icon: "⚡" },
+  { id: "python", slug: "python-core", label: "Python", desc: "Async frameworks, ML tooling & bindings", icon: "🐍" },
+  { id: "rust-systems", slug: "rust-systems", label: "Rust & Systems", desc: "Compilers, runtimes & low-level speed", icon: "⚙" },
+  { id: "typescript-web", slug: "web-typescript", label: "TypeScript & Web", desc: "Edge runtimes, React & full-stack apps", icon: "◈" },
+  { id: "cloud-go", slug: "cloud-native", label: "Cloud & Go", desc: "Kubernetes, eBPF, Docker & infra", icon: "☁" },
+  { id: "security-bots", slug: "secops-anomalies", label: "SecOps & Bots", desc: "Spam detection & supply-chain security", icon: "🛡" },
+  { id: "devtools", slug: "developer-tools", label: "DevTools", desc: "Package managers, CLIs & workflows", icon: "⌘" }
 ];
 
 const SIGNAL_GOALS = [
-  { id: "viral", title: "Early Viral Breakouts", desc: "Spot <5k star repos experiencing >10x Z-score surges" },
-  { id: "velocity", title: "High Contributor Velocity", desc: "Prioritize active PR merges and multi-actor commits" },
-  { id: "infra", title: "Production Infrastructure", desc: "Focus on lakehouse, cloud, and runtime engines" },
-  { id: "anomaly", title: "Bot & Spam Detection", desc: "Surface suspicious push-to-star anomalies" }
+  { id: "viral", title: "Early Viral Breakouts", desc: "Surface <5k star repos with >10σ Z-score surges" },
+  { id: "velocity", title: "High Contributor Velocity", desc: "Weight human PR merges and multi-actor commits" },
+  { id: "infra", title: "Production Infrastructure", desc: "Prioritize storage, compute & cloud engines" },
+  { id: "anomaly", title: "Bot & Spam Flagging", desc: "Highlight suspicious push-to-star anomalies" }
 ];
 
 function getPresetUsers() {
@@ -31,31 +30,31 @@ function getPresetUsers() {
       signal_goals: ["viral", "infra"],
       watchlist: ["deepseek-ai/DeepSeek-MoE-V4", "apache/spark-lakehouse-agent"],
       events_quota: "2,910,400",
-      footprint_status: "Warm · Spark Silver Parquet",
+      footprint_status: "Spark Silver Synced",
       onboarding_completed: true
     },
     alice: {
       username: "alice",
       password: "123",
-      role: "Frontend & Edge Architect",
+      role: "Full-Stack & Edge Dev",
       avatar: "https://github.com/identicons/alice.png",
       selected_tags: ["typescript-web", "rust-systems", "devtools"],
       signal_goals: ["viral", "velocity"],
       watchlist: ["vercel/next-edge-runtime", "pydantic/fastapi-rust-core"],
       events_quota: "1,540,200",
-      footprint_status: "Warm · Spark Silver Parquet",
+      footprint_status: "Spark Silver Synced",
       onboarding_completed: true
     },
     auditor: {
       username: "auditor",
       password: "123",
-      role: "Platform Integrity Analyst",
+      role: "Platform SecOps",
       avatar: "https://github.com/identicons/auditor.png",
       selected_tags: ["security-bots", "cloud-go", "data-spark"],
       signal_goals: ["anomaly"],
       watchlist: ["crypto-auto-mirror/bot-farm-repo"],
       events_quota: "369,900",
-      footprint_status: "Warm · Spark Silver Parquet",
+      footprint_status: "Spark Silver Synced",
       onboarding_completed: true
     }
   };
@@ -73,18 +72,25 @@ function saveUserRecord(userObj) {
   localStorage.setItem(CUSTOM_USERS_KEY, JSON.stringify(custom));
 }
 
-function switchAuthTab(tab) {
-  const isSignIn = tab === "signin";
-  document.getElementById("signin-form").classList.toggle("hidden", !isSignIn);
-  document.getElementById("github-auth-box").classList.toggle("hidden", !isSignIn);
-  document.getElementById("register-form").classList.toggle("hidden", isSignIn);
+let isRegisterMode = false;
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
+  document.getElementById("signin-form").classList.toggle("hidden", isRegisterMode);
+  document.getElementById("github-auth-box").classList.toggle("hidden", isRegisterMode);
+  document.getElementById("register-form").classList.toggle("hidden", !isRegisterMode);
 
-  document.getElementById("tab-signin").className = isSignIn
-    ? "py-1.5 rounded-md bg-[#181b22] text-zinc-100 shadow-sm transition"
-    : "py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition";
-  document.getElementById("tab-register").className = !isSignIn
-    ? "py-1.5 rounded-md bg-[#181b22] text-zinc-100 shadow-sm transition"
-    : "py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 transition";
+  document.getElementById("auth-heading").textContent = isRegisterMode
+    ? "Create your GitPulse account"
+    : "Sign in to GitPulse";
+  document.getElementById("auth-subheading").textContent = isRegisterMode
+    ? "Pick your channels right after sign-up to solve Day-1 cold start"
+    : "Open-source breakout intelligence powered by Apache Spark";
+  document.getElementById("auth-switch-prompt").textContent = isRegisterMode
+    ? "Already have an account?"
+    : "New to GitPulse?";
+  document.getElementById("auth-switch-btn").textContent = isRegisterMode
+    ? "Sign in"
+    : "Create an account";
   document.getElementById("auth-error").classList.add("hidden");
 }
 
@@ -101,22 +107,20 @@ function quickDemoLogin(username) {
   }
 }
 
-// 1-click tester to demo the Discord-style onboarding modal anytime
 function quickNewUserDemo() {
-  const demoId = "new_dev_" + Math.floor(100 + Math.random() * 899);
-  const freshUser = {
+  const demoId = "guest_" + Math.floor(100 + Math.random() * 899);
+  loginSuccess({
     username: demoId,
     password: "123",
-    role: "New Member (Cold-Start)",
+    role: "New Member",
     avatar: `https://github.com/identicons/${demoId}.png`,
     selected_tags: [],
     signal_goals: ["viral"],
     watchlist: [],
-    events_quota: "0 (Awaiting Tags)",
-    footprint_status: "Cold-Start · No Footprint Yet",
+    events_quota: "0",
+    footprint_status: "Cold-Start · Pick Channels",
     onboarding_completed: false
-  };
-  loginSuccess(freshUser);
+  });
 }
 
 function openGitHubModal() {
@@ -170,9 +174,7 @@ async function pushUserFootprintToBackend(userObj, recentPublicEvents = []) {
 
 async function buildUserFromRealGitHub(githubUsername) {
   const existing = getAllUsers()[githubUsername.toLowerCase()];
-  if (existing && existing.onboarding_completed) {
-    return existing;
-  }
+  if (existing && existing.onboarding_completed) return existing;
 
   const [profileRes, reposRes, starredRes, eventsRes] = await Promise.all([
     fetch(`https://api.github.com/users/${githubUsername}`),
@@ -182,7 +184,7 @@ async function buildUserFromRealGitHub(githubUsername) {
   ]);
 
   if (!profileRes.ok) {
-    throw new Error(`GitHub account '${githubUsername}' not found or API rate-limited.`);
+    throw new Error(`GitHub user '${githubUsername}' not found or rate-limited.`);
   }
 
   const profile = await profileRes.json();
@@ -192,19 +194,16 @@ async function buildUserFromRealGitHub(githubUsername) {
 
   const rawLangs = repos.map(r => r.language).filter(Boolean);
   const suggestedTags = inferTagsFromGitHubLangs(rawLangs);
-  const starredNames = starred.slice(0, 4).map(s => s.full_name);
 
-  // First-time GitHub joiner: pre-highlight suggested tags, and open Discord-style onboarding
-  // because our backend GH Archive pipeline hasn't tracked their historical footprint yet
   const userObj = {
     username: profile.login,
     avatar: profile.avatar_url,
-    role: `GitHub · ${profile.public_repos} Public Repos`,
+    role: `${profile.public_repos} public repos`,
     selected_tags: suggestedTags,
     signal_goals: ["viral"],
-    watchlist: starredNames,
+    watchlist: starred.slice(0, 4).map(s => s.full_name),
     events_quota: ((profile.public_repos + publicEvents.length + 8) * 48200).toLocaleString(),
-    footprint_status: `Cold-Start · Queued GH Archive Scan (${publicEvents.length} live events)`,
+    footprint_status: `Queued GH Archive (${publicEvents.length} live events)`,
     onboarding_completed: false
   };
 
@@ -224,29 +223,27 @@ if (document.getElementById("signin-form")) {
       loginSuccess(users[u]);
     } else {
       const err = document.getElementById("auth-error");
-      err.textContent = "Invalid username or password. Demo password is '123'.";
+      err.textContent = "Incorrect username or password (demo password: 123).";
       err.classList.remove("hidden");
     }
   });
 
-  document.getElementById("register-form").addEventListener("submit", async (e) => {
+  document.getElementById("register-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const u = document.getElementById("reg-username").value.trim().toLowerCase();
     const p = document.getElementById("reg-password").value;
-
-    const newUser = {
+    loginSuccess({
       username: u,
       password: p,
-      role: "Developer Member",
+      role: "Developer",
       avatar: `https://github.com/${u}.png`,
       selected_tags: [],
       signal_goals: ["viral"],
       watchlist: [],
-      events_quota: "0 (Select tags)",
-      footprint_status: "Cold-Start · Awaiting Tag Selection",
+      events_quota: "0",
+      footprint_status: "Cold-Start · Pick Channels",
       onboarding_completed: false
-    };
-    loginSuccess(newUser);
+    });
   });
 
   document.getElementById("gh-connect-form")?.addEventListener("submit", async (e) => {
@@ -257,13 +254,13 @@ if (document.getElementById("signin-form")) {
     if (!ghHandle) return;
 
     try {
-      btn.textContent = "Syncing GitHub...";
+      btn.textContent = "Connecting...";
       btn.disabled = true;
       const userObj = await buildUserFromRealGitHub(ghHandle);
       loginSuccess(userObj);
     } catch (error) {
       closeGitHubModal();
-      btn.textContent = "Sync & Continue";
+      btn.textContent = "Connect";
       btn.disabled = false;
       err.textContent = error.message;
       err.classList.remove("hidden");
@@ -293,7 +290,7 @@ function completeUserOnboarding(selectedTags, selectedGoals) {
   user.signal_goals = selectedGoals;
   user.onboarding_completed = true;
   user.events_quota = (selectedTags.length * 645200).toLocaleString();
-  user.footprint_status = "Cold-Start Tags Active · Queued Spark Scan";
+  user.footprint_status = "Channels Active · Spark Queued";
 
   saveUserRecord(user);
   pushUserFootprintToBackend(user, []);
@@ -306,7 +303,6 @@ function toggleWatchlistRepo(repoName) {
   const idx = user.watchlist.indexOf(repoName);
   if (idx >= 0) user.watchlist.splice(idx, 1);
   else user.watchlist.push(repoName);
-
   saveUserRecord(user);
   return user;
 }

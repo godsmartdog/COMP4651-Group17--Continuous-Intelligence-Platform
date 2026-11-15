@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Global Breakouts · GitPulse Intelligence</title>
+  <title>Global Catalog · GitPulse Intelligence</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,24 +19,23 @@
   <main class="page-container">
     <div class="page-header-row">
       <div>
-        <h1 class="page-title">Global Open-Source Breakouts</h1>
-        <p class="page-subtitle">All emerging repositories detected across hourly GH Archive streams, ranked by smoothed Z-velocity.</p>
+        <h1 class="page-title">Unified Repository Catalog</h1>
+        <p class="page-subtitle">Continuously updated from hourly GH Archive streams + GitHub REST API enrichment. Observed star additions reflect recent window surges, not lifetime stars.</p>
       </div>
       <div class="toolbar-controls">
-        <input id="repo-search" type="text" placeholder="Search global stream..." class="toolbar-input" />
+        <input id="repo-search" type="text" placeholder="Search catalog..." class="toolbar-input" />
         <select id="repo-sort" class="toolbar-select">
-          <option value="z_score">Sort: Momentum Z-Score</option>
-          <option value="stars_24h">Sort: 24h Stars</option>
-          <option value="forecast_7d">Sort: 7d ML Forecast</option>
+          <option value="z_score">Sort: Activity Z-Velocity</option>
+          <option value="stars_24h">Sort: Observed Star Additions</option>
+          <option value="newest">Sort: Newly Created First</option>
         </select>
       </div>
     </div>
 
-    <!-- Spacious Split Explorer: Table Left + Sticky Forecast Inspector Right -->
     <section class="split-explorer-grid">
       <div class="surface-card">
         <div class="table-card-header">
-          <span id="table-subtitle" class="section-heading">Global Leaderboard</span>
+          <span id="table-subtitle" class="section-heading">Enriched Catalog Snapshot</span>
           <span id="table-count" class="section-hint font-mono">0 repositories</span>
         </div>
         <div class="table-scroll">
@@ -44,22 +43,22 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Repository</th>
-                <th class="text-right">24h Stars</th>
+                <th>Repository &amp; Topics</th>
+                <th class="text-right">Observed Stars (24h)</th>
                 <th class="text-right">Momentum Z</th>
-                <th>Signal</th>
-                <th class="text-right">Save</th>
+                <th>Recency / Status</th>
+                <th class="text-right">Feedback</th>
               </tr>
             </thead>
             <tbody id="leaderboard-body"></tbody>
           </table>
         </div>
         <div id="empty-state" class="empty-box hidden">
-          <div class="section-heading">No repositories match your search</div>
+          <div class="section-heading">No repositories match your filter</div>
         </div>
       </div>
 
-      <!-- Sticky Right Inspector Card -->
+      <!-- Sticky Right Catalog Context Inspector -->
       <aside class="surface-card inspector-card">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
           <span id="insp-lang" class="version-pill">Select Repo</span>
@@ -68,33 +67,34 @@
         <div>
           <h2 id="insp-title" class="section-heading" style="font-size:1.2rem;">Select a repository</h2>
           <p id="insp-desc" class="page-subtitle" style="font-size:0.85rem;"></p>
+          <div id="insp-topics" class="repo-meta-pills"></div>
         </div>
 
         <div class="inspector-metrics-grid">
           <div class="inspector-stat-box">
-            <div class="inspector-stat-label">24h Star Surge</div>
+            <div class="inspector-stat-label">Observed Stars (24h)</div>
             <div id="insp-stars" class="inspector-stat-val tabular-nums">--</div>
           </div>
           <div class="inspector-stat-box">
-            <div class="inspector-stat-label">7d Daily Baseline</div>
-            <div id="insp-baseline" class="inspector-stat-val tabular-nums">--</div>
+            <div class="inspector-stat-label">Created At (GitHub API)</div>
+            <div id="insp-created" class="inspector-stat-val font-mono" style="font-size:0.92rem;">--</div>
           </div>
           <div class="inspector-stat-box">
-            <div class="inspector-stat-label">24h Forks</div>
+            <div class="inspector-stat-label">Observed Forks / PRs</div>
             <div id="insp-forks" class="inspector-stat-val tabular-nums">--</div>
           </div>
           <div class="inspector-stat-box">
-            <div class="inspector-stat-label">24h Pushes</div>
+            <div class="inspector-stat-label">Observed Issues / Pushes</div>
             <div id="insp-pushes" class="inspector-stat-val tabular-nums">--</div>
           </div>
         </div>
 
         <div>
           <div class="section-label-row" style="margin-bottom:0.4rem;">
-            <span class="section-heading" style="font-size:0.88rem;">7-Day Spark MLlib GBT Trajectory</span>
+            <span class="section-heading" style="font-size:0.88rem;">7-Day Observed Star Additions (GH Archive)</span>
             <a id="insp-gh-link" href="#" target="_blank" rel="noopener noreferrer" class="auth-link-btn" style="font-size:0.8rem;">Open on GitHub ↗</a>
           </div>
-          <div style="height:230px; position:relative;">
+          <div style="height:220px; position:relative;">
             <canvas id="inlineForecastChart"></canvas>
           </div>
         </div>

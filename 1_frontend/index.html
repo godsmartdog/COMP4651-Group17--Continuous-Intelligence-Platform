@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>For You · GitPulse Intelligence</title>
+  <title>For You · GitPulse Personalized Discovery</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,72 +14,125 @@
 </head>
 <body class="app-page" data-page="for-you">
 
-  <!-- Shared Horizontal Top Navbar (Populated by charts.js) -->
   <header id="shared-navbar" class="top-navbar"></header>
-
-  <!-- Horizontal Subscribed Channels / Tags Bar -->
   <div id="shared-tag-strip" class="horizontal-tag-strip"></div>
 
-  <!-- Spacious Main Container -->
   <main class="page-container">
 
     <div class="page-header-row">
       <div>
-        <h1 class="page-title">For You Intelligence Feed</h1>
-        <p class="page-subtitle">Personalized breakout repositories matched to your subscribed channels &amp; Spark ALS profile.</p>
+        <h1 class="page-title">Personalized Repository Feed</h1>
+        <p class="page-subtitle">Matched from our unified GH Archive + GitHub REST API catalog using lexical or semantic cosine similarity.</p>
       </div>
       <div class="toolbar-controls">
-        <input id="repo-search" type="text" placeholder="Search repositories or languages..." class="toolbar-input" />
-        <select id="repo-sort" class="toolbar-select">
-          <option value="z_score">Sort: Momentum Z-Score</option>
-          <option value="stars_24h">Sort: 24h Stars</option>
-          <option value="forecast_7d">Sort: 7d ML Forecast</option>
+        <!-- Model Selector: Directly Demonstrates Slide 6! -->
+        <select id="retrieval-model" class="toolbar-select" aria-label="Select retrieval model">
+          <option value="semantic">Main: Sentence Transformer (Semantic)</option>
+          <option value="tfidf">Baseline: Sublinear TF-IDF (Lexical)</option>
         </select>
+
+        <!-- Slide 7 Blind Peer Evaluation Toggle -->
+        <button id="btn-blind-study" type="button" onclick="toggleBlindStudyMode()" class="btn-study-toggle">
+          🧪 Blind Study Mode: Off
+        </button>
       </div>
     </div>
 
-    <!-- Top 3 Personalized ALS Recommendations -->
+    <!-- Step 01 (Slide 3 & Slide 6): Free-Form Workflow Interest Bar -->
+    <section class="surface-card workflow-query-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+        <label for="workflow-query-input" class="section-heading" style="font-size:0.92rem;">
+          Free-Form Workflow &amp; Technical Interest Query
+        </label>
+        <span id="hidden-restore-pill" class="hidden"></span>
+      </div>
+
+      <div class="workflow-input-row">
+        <input id="workflow-query-input" type="text"
+          placeholder="Describe what you're building (e.g. Python tools for backtesting trading strategies)..."
+          class="workflow-text-input" />
+        <button type="button" onclick="applyWorkflowQuery()" class="btn-auth-primary" style="width:auto; padding:0.7rem 1.25rem;">
+          Match Catalog
+        </button>
+      </div>
+
+      <div class="preset-query-row">
+        <span>Slide 6 Test Prompts:</span>
+        <button type="button" onclick="setPresetPrompt('Python tools for backtesting trading strategies')" class="preset-query-chip">
+          "Python tools for backtesting trading strategies"
+        </button>
+        <button type="button" onclick="setPresetPrompt('Autonomous multi-agent LLM workflow with state recovery')" class="preset-query-chip">
+          "Autonomous multi-agent LLM workflow"
+        </button>
+        <button type="button" onclick="setPresetPrompt('Deterministic Spark Parquet deduplication pipeline')" class="preset-query-chip">
+          "Spark Parquet deduplication pipeline"
+        </button>
+      </div>
+    </section>
+
+    <!-- Slide 7: Blind Shuffling & Live Precision@10 / NDCG@10 / Novelty@10 Banner (Shown when Blind Study Mode is ON) -->
+    <section id="blind-study-banner" class="study-banner hidden">
+      <div>
+        <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#4f46e5;">
+          Slide 7 · Double-Blind Peer Evaluation Active
+        </div>
+        <div class="section-heading" style="margin-top:0.2rem;">
+          Candidates merged, deduplicated &amp; blind-shuffled (model identities hidden)
+        </div>
+        <div class="section-hint" style="margin-top:0.15rem;">
+          Assign 3-tier relevance (0 / 1 / 2) and familiarity below to compute live evaluation metrics.
+        </div>
+      </div>
+
+      <div class="study-metrics-inline font-mono">
+        <div class="study-metric-pill">
+          <span>Precision@10</span>
+          <strong id="live-p10">--</strong>
+        </div>
+        <div class="study-metric-pill">
+          <span>NDCG@10</span>
+          <strong id="live-ndcg10">--</strong>
+        </div>
+        <div class="study-metric-pill">
+          <span>Novelty@10</span>
+          <strong id="live-novelty10">--</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top 3 Matched Candidates -->
     <section id="spotlight-section">
       <div class="section-label-row">
-        <h2 class="section-heading">✦ Recommended Breakouts For You</h2>
-        <span class="section-hint">Click any card to inspect its 7-day Spark MLlib forecast</span>
+        <h2 id="spotlight-heading" class="section-heading">✦ Top Semantic Matches (Sentence Transformer)</h2>
+        <span class="section-hint">Click any card to compare Lexical TF-IDF vs. Semantic Embedding similarity</span>
       </div>
       <div id="als-cards" class="als-grid"></div>
     </section>
 
-    <!-- Personalized Repository Table -->
+    <!-- Top-10 Eligible Repository Candidates Table -->
     <section class="surface-card">
       <div class="table-card-header">
-        <span id="table-subtitle" class="section-heading">Repositories in Your Channels</span>
-        <span id="table-count" class="section-hint font-mono">0 repositories</span>
+        <span id="table-subtitle" class="section-heading">Top Eligible Repository Candidates</span>
+        <div class="toolbar-controls">
+          <input id="repo-search" type="text" placeholder="Filter table..." class="toolbar-input" style="min-width:180px; padding:0.45rem 0.75rem;" />
+          <span id="table-count" class="section-hint font-mono">0 repositories</span>
+        </div>
       </div>
       <div class="table-scroll">
         <table class="data-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Repository</th>
-              <th>7d Trend</th>
-              <th class="text-right">24h Stars</th>
-              <th class="text-right">Momentum Z</th>
-              <th class="text-right">7d ML Pred</th>
-              <th>Signal</th>
-              <th class="text-right">Save</th>
-            </tr>
-          </thead>
+          <thead id="for-you-thead"></thead>
           <tbody id="leaderboard-body"></tbody>
         </table>
       </div>
       <div id="empty-state" class="empty-box hidden">
         <div class="section-heading">No matching repositories</div>
-        <p class="section-hint">Try selecting another channel pill above or adding more tags.</p>
-        <button type="button" onclick="openOnboardingModal()" class="btn-auth-secondary">Customize Channels &amp; Tags</button>
+        <p class="section-hint">Notice how strict TF-IDF lexical matching can miss relevant repositories when terminology differs—try switching to Sentence Transformer or adjusting your topics!</p>
+        <button type="button" onclick="openOnboardingModal()" class="btn-auth-secondary">Edit Interests &amp; Topics</button>
       </div>
     </section>
 
   </main>
 
-  <!-- Shared Modals Container (Onboarding + Repo Forecast Modal) -->
   <div id="shared-modals"></div>
 
   <script src="./js/api.js"></script>

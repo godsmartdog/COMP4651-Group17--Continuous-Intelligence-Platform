@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Watchlist · GitPulse Intelligence</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <script src="./js/auth.js"></script>
+  <script>const CURRENT_USER = requireAuth();</script>
+</head>
+<body class="app-page" data-page="watchlist">
+
+  <header id="shared-navbar" class="top-navbar"></header>
+
+  <main class="page-container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">★ Saved Watchlist</h1>
+        <p class="page-subtitle">Repositories synced from your GitHub stars and bookmarked across GitPulse.</p>
+      </div>
+      <div class="toolbar-controls">
+        <input id="repo-search" type="text" placeholder="Filter saved repos..." class="toolbar-input" />
+        <a href="./global.html" class="btn-auth-secondary" style="text-decoration:none;">+ Browse Global Breakouts</a>
+      </div>
+    </div>
+
+    <section class="surface-card">
+      <div class="table-card-header">
+        <span id="table-subtitle" class="section-heading">Tracked Repositories</span>
+        <span id="table-count" class="section-hint font-mono">0 repositories</span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Repository</th>
+              <th>7d Trend</th>
+              <th class="text-right">24h Stars</th>
+              <th class="text-right">Momentum Z</th>
+              <th class="text-right">7d ML Pred</th>
+              <th>Signal</th>
+              <th class="text-right">Saved</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" class="empty-box hidden">
+        <div class="section-heading">Your watchlist is empty</div>
+        <p class="section-hint">Star any repository in your For You feed or Global Breakouts to track it here.</p>
+        <a href="./index.html" class="btn-auth-secondary" style="text-decoration:none;">Back to For You Feed →</a>
+      </div>
+    </section>
+  </main>
+
+  <div id="shared-modals"></div>
+
+  <script src="./js/api.js"></script>
+  <script src="./js/charts.js"></script>
+</body>
+</html>

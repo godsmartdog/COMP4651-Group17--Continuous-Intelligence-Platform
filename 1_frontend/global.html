@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Breakouts · GitPulse Intelligence</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <script src="./js/auth.js"></script>
+  <script>const CURRENT_USER = requireAuth();</script>
+</head>
+<body class="app-page" data-page="global">
+
+  <header id="shared-navbar" class="top-navbar"></header>
+
+  <main class="page-container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Global Open-Source Breakouts</h1>
+        <p class="page-subtitle">All emerging repositories detected across hourly GH Archive streams, ranked by smoothed Z-velocity.</p>
+      </div>
+      <div class="toolbar-controls">
+        <input id="repo-search" type="text" placeholder="Search global stream..." class="toolbar-input" />
+        <select id="repo-sort" class="toolbar-select">
+          <option value="z_score">Sort: Momentum Z-Score</option>
+          <option value="stars_24h">Sort: 24h Stars</option>
+          <option value="forecast_7d">Sort: 7d ML Forecast</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Spacious Split Explorer: Table Left + Sticky Forecast Inspector Right -->
+    <section class="split-explorer-grid">
+      <div class="surface-card">
+        <div class="table-card-header">
+          <span id="table-subtitle" class="section-heading">Global Leaderboard</span>
+          <span id="table-count" class="section-hint font-mono">0 repositories</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Repository</th>
+                <th class="text-right">24h Stars</th>
+                <th class="text-right">Momentum Z</th>
+                <th>Signal</th>
+                <th class="text-right">Save</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body"></tbody>
+          </table>
+        </div>
+        <div id="empty-state" class="empty-box hidden">
+          <div class="section-heading">No repositories match your search</div>
+        </div>
+      </div>
+
+      <!-- Sticky Right Inspector Card -->
+      <aside class="surface-card inspector-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
+          <span id="insp-lang" class="version-pill">Select Repo</span>
+          <span id="insp-cluster"></span>
+        </div>
+        <div>
+          <h2 id="insp-title" class="section-heading" style="font-size:1.2rem;">Select a repository</h2>
+          <p id="insp-desc" class="page-subtitle" style="font-size:0.85rem;"></p>
+        </div>
+
+        <div class="inspector-metrics-grid">
+          <div class="inspector-stat-box">
+            <div class="inspector-stat-label">24h Star Surge</div>
+            <div id="insp-stars" class="inspector-stat-val tabular-nums">--</div>
+          </div>
+          <div class="inspector-stat-box">
+            <div class="inspector-stat-label">7d Daily Baseline</div>
+            <div id="insp-baseline" class="inspector-stat-val tabular-nums">--</div>
+          </div>
+          <div class="inspector-stat-box">
+            <div class="inspector-stat-label">24h Forks</div>
+            <div id="insp-forks" class="inspector-stat-val tabular-nums">--</div>
+          </div>
+          <div class="inspector-stat-box">
+            <div class="inspector-stat-label">24h Pushes</div>
+            <div id="insp-pushes" class="inspector-stat-val tabular-nums">--</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label-row" style="margin-bottom:0.4rem;">
+            <span class="section-heading" style="font-size:0.88rem;">7-Day Spark MLlib GBT Trajectory</span>
+            <a id="insp-gh-link" href="#" target="_blank" rel="noopener noreferrer" class="auth-link-btn" style="font-size:0.8rem;">Open on GitHub ↗</a>
+          </div>
+          <div style="height:230px; position:relative;">
+            <canvas id="inlineForecastChart"></canvas>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="shared-modals"></div>
+
+  <script src="./js/api.js"></script>
+  <script src="./js/charts.js"></script>
+</body>
+</html>

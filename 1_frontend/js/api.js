@@ -15,23 +15,20 @@ async function loadDashboardData(username = "") {
       if (!response.ok) throw new Error("API unavailable");
       const data = await response.json();
 
-      dot.className = "w-2 h-2 rounded-full bg-emerald-400";
-      label.textContent = "PostgreSQL + Spark Live";
+      if (dot) dot.className = "status-dot";
+      if (label) label.textContent = "PostgreSQL + Spark Live";
       return data;
     } catch (_) {
-      // Fall through to Gold JSON snapshot
+      // Fallback to static snapshot
     }
   }
 
   const snapshotResponse = await fetch(STATIC_JSON_URL, { cache: "no-store" });
   const snapshotData = await snapshotResponse.json();
 
-  if (IS_GITHUB_PAGES) {
-    dot.className = "w-2 h-2 rounded-full bg-indigo-400";
-    label.textContent = "Gold Snapshot · GitHub Pages";
-  } else {
-    dot.className = "w-2 h-2 rounded-full bg-amber-400";
-    label.textContent = "Gold Snapshot · Local Mode";
+  if (dot) dot.className = "status-dot snapshot";
+  if (label) {
+    label.textContent = IS_GITHUB_PAGES ? "Gold Snapshot · GitHub Pages" : "Gold Snapshot · Local";
   }
   return snapshotData;
 }

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipeline &amp; Benchmarks · GitPulse Intelligence</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <script src="./js/auth.js"></script>
+  <script>const CURRENT_USER = requireAuth();</script>
+</head>
+<body class="app-page" data-page="benchmarks">
+
+  <header id="shared-navbar" class="top-navbar"></header>
+
+  <main class="page-container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Lakehouse Telemetry &amp; Benchmarks</h1>
+        <p class="page-subtitle">COMP4651 Group 17 · Exploratory Data Analysis (Part 2) &amp; Incremental Spark Evaluation (Part 3).</p>
+      </div>
+      <span id="last-updated" class="conn-pill font-mono">Batch: --</span>
+    </div>
+
+    <!-- Medallion Pipeline Flow Card -->
+    <section class="surface-card medallion-banner">
+      <div>
+        <div class="section-heading">Medallion Storage &amp; Compute Architecture</div>
+        <div class="section-hint">Dockerized Cloud Object Storage + Apache Spark + Partitioned Parquet + PostgreSQL</div>
+      </div>
+      <div class="medallion-steps font-mono">
+        <span class="step-badge">1. Bronze (Raw JSON.gz)</span>
+        <span>→</span>
+        <span class="step-badge">2. Silver (Deduped Parquet)</span>
+        <span>→</span>
+        <span class="step-badge" style="border-color:#c7d2fe; background:#eef2ff; color:#4f46e5;">3. Gold (Incremental State + ML)</span>
+      </div>
+    </section>
+
+    <!-- 4 Spacious KPI Cards -->
+    <section class="kpi-grid">
+      <div class="surface-card kpi-card">
+        <span class="kpi-label">Global Events Ingested (24h)</span>
+        <span id="kpi-events" class="kpi-value tabular-nums">--</span>
+        <span class="kpi-foot">142,380 active repositories tracked</span>
+      </div>
+      <div class="surface-card kpi-card">
+        <span class="kpi-label">Incremental Batch Latency</span>
+        <span id="kpi-latency" class="kpi-value emerald tabular-nums">--</span>
+        <span id="kpi-speedup" class="kpi-foot">-- vs. 30-day batch scan</span>
+      </div>
+      <div class="surface-card kpi-card">
+        <span class="kpi-label">Bot &amp; Spam Events Stripped</span>
+        <span id="kpi-bots" class="kpi-value tabular-nums">--</span>
+        <span class="kpi-foot">Filtered via actor frequency &amp; event_id</span>
+      </div>
+      <div class="surface-card kpi-card">
+        <span class="kpi-label">Parquet Storage Savings</span>
+        <span id="kpi-compression" class="kpi-value indigo tabular-nums">--</span>
+        <span class="kpi-foot">Snappy/ZSTD columnar compression</span>
+      </div>
+    </section>
+
+    <!-- 2 Spacious Diagnostic Charts -->
+    <section class="charts-two-col">
+      <div class="surface-card chart-card">
+        <h2 class="section-heading">Incremental Lakehouse vs. Full Historical Recompute</h2>
+        <p class="section-hint" style="margin:0.3rem 0 0;">Execution time (minutes) across 24h, 7d, and 30d dataset windows</p>
+        <div class="chart-box">
+          <canvas id="benchmarkChart"></canvas>
+        </div>
+      </div>
+
+      <div class="surface-card chart-card">
+        <h2 class="section-heading">GH Archive Stream Composition &amp; Signal Weights</h2>
+        <p class="section-hint" style="margin:0.3rem 0 0;">Raw event volume share (%) vs. multi-signal momentum weighting</p>
+        <div class="chart-box">
+          <canvas id="eventDistChart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="shared-modals"></div>
+
+  <script src="./js/api.js"></script>
+  <script src="./js/charts.js"></script>
+</body>
+</html>

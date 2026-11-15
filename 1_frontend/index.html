@@ -1,286 +1,86 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Workspace · GitPulse Intelligence</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>For You · GitPulse Intelligence</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./css/styles.css" />
   <script src="./js/auth.js"></script>
-  <script>
-    const CURRENT_USER = requireAuth();
-  </script>
+  <script>const CURRENT_USER = requireAuth();</script>
 </head>
-<body class="h-screen overflow-hidden flex antialiased selection:bg-indigo-500/30">
+<body class="app-page" data-page="for-you">
 
-  <!-- Left Sidebar (Linear / Vercel SaaS Layout) -->
-  <aside class="w-60 shrink-0 border-r border-[#1f232b] bg-[#0c0e12] flex flex-col justify-between p-3.5 hidden md:flex">
-    <div class="space-y-6">
-      <!-- Brand -->
-      <div class="flex items-center justify-between px-2 pt-1">
-        <div class="flex items-center gap-2.5">
-          <div class="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">G</div>
-          <span class="font-semibold text-sm text-zinc-100 tracking-tight">GitPulse</span>
-        </div>
-        <span class="text-[10px] font-mono text-zinc-500 border border-zinc-800 px-1.5 py-0.5 rounded">v2.4</span>
+  <!-- Shared Horizontal Top Navbar (Populated by charts.js) -->
+  <header id="shared-navbar" class="top-navbar"></header>
+
+  <!-- Horizontal Subscribed Channels / Tags Bar -->
+  <div id="shared-tag-strip" class="horizontal-tag-strip"></div>
+
+  <!-- Spacious Main Container -->
+  <main class="page-container">
+
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">For You Intelligence Feed</h1>
+        <p class="page-subtitle">Personalized breakout repositories matched to your subscribed channels &amp; Spark ALS profile.</p>
       </div>
-
-      <!-- Primary Feed Views -->
-      <div class="space-y-1">
-        <div class="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Intelligence</div>
-        <div id="nav-MY_STACK" onclick="setFeedScope('MY_STACK')" class="nav-item active">
-          <span>✦</span>
-          <span>For You Feed</span>
-        </div>
-        <div id="nav-GLOBAL" onclick="setFeedScope('GLOBAL')" class="nav-item">
-          <span>🌐</span>
-          <span>Global Breakouts</span>
-        </div>
-        <div id="nav-WATCHLIST" onclick="setFeedScope('WATCHLIST')" class="nav-item justify-between">
-          <div class="flex items-center gap-2.5">
-            <span>★</span>
-            <span>Watchlist</span>
-          </div>
-          <span id="sidebar-watch-count" class="text-[11px] font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">0</span>
-        </div>
-      </div>
-
-      <!-- Subscribed Discord-Style Tags -->
-      <div class="space-y-2 px-2">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Your Channels / Tags</span>
-          <button onclick="openOnboardingModal()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">
-            Edit
-          </button>
-        </div>
-        <div id="sidebar-tags" class="flex flex-wrap gap-1.5 pt-0.5"></div>
+      <div class="toolbar-controls">
+        <input id="repo-search" type="text" placeholder="Search repositories or languages..." class="toolbar-input" />
+        <select id="repo-sort" class="toolbar-select">
+          <option value="z_score">Sort: Momentum Z-Score</option>
+          <option value="stars_24h">Sort: 24h Stars</option>
+          <option value="forecast_7d">Sort: 7d ML Forecast</option>
+        </select>
       </div>
     </div>
 
-    <!-- Signed-In User Footer Card -->
-    <div class="border-t border-[#1f232b] pt-3 space-y-2.5">
-      <div class="flex items-center gap-2.5 px-1.5">
-        <img id="sidebar-avatar" src="https://github.com/identicons/default.png"
-          onerror="this.src='https://github.com/identicons/default.png'"
-          class="w-8 h-8 rounded-full border border-zinc-700 shrink-0" alt="User" />
-        <div class="min-w-0 flex-1">
-          <div id="sidebar-username" class="text-xs font-semibold text-zinc-100 truncate"></div>
-          <div id="sidebar-footprint" class="text-[10px] text-zinc-500 truncate"></div>
-        </div>
+    <!-- Top 3 Personalized ALS Recommendations -->
+    <section id="spotlight-section">
+      <div class="section-label-row">
+        <h2 class="section-heading">✦ Recommended Breakouts For You</h2>
+        <span class="section-hint">Click any card to inspect its 7-day Spark MLlib forecast</span>
       </div>
-      <button onclick="signOut()" class="w-full saas-btn-secondary h-8 text-xs font-medium">
-        Sign Out
-      </button>
-    </div>
-  </aside>
+      <div id="als-cards" class="als-grid"></div>
+    </section>
 
-  <!-- Right Main Content Area -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-    <!-- Top Workspace Header Bar -->
-    <header class="h-14 shrink-0 border-b border-[#1f232b] bg-[#09090b]/90 px-6 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <h1 id="page-title" class="text-sm font-semibold text-zinc-100 truncate">For You · Personalized Feed</h1>
-        <span id="cold-start-pill" class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono bg-indigo-500/10 text-indigo-300 border border-indigo-500/25"></span>
+    <!-- Personalized Repository Table -->
+    <section class="surface-card">
+      <div class="table-card-header">
+        <span id="table-subtitle" class="section-heading">Repositories in Your Channels</span>
+        <span id="table-count" class="section-hint font-mono">0 repositories</span>
       </div>
-
-      <div class="flex items-center gap-2.5">
-        <input id="repo-search" type="text" placeholder="Filter repositories or languages..."
-          class="saas-input h-8 w-44 sm:w-64 px-3 text-xs" />
-
-        <button onclick="openOnboardingModal()" class="saas-btn-secondary h-8 px-3 text-xs font-medium inline-flex items-center gap-1.5">
-          <span>#</span>
-          <span>Tags</span>
-        </button>
-
-        <button onclick="signOut()" class="saas-btn-secondary h-8 px-3 text-xs font-medium md:hidden">
-          Exit
-        </button>
-
-        <div class="hidden lg:flex items-center gap-2 px-2.5 h-8 rounded-lg border border-[#1f232b] bg-[#111318] text-[11px] text-zinc-400">
-          <span id="conn-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span id="conn-label">Connecting...</span>
-        </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Repository</th>
+              <th>7d Trend</th>
+              <th class="text-right">24h Stars</th>
+              <th class="text-right">Momentum Z</th>
+              <th class="text-right">7d ML Pred</th>
+              <th>Signal</th>
+              <th class="text-right">Save</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body"></tbody>
+        </table>
       </div>
-    </header>
-
-    <!-- Scrollable Dashboard Body -->
-    <main class="flex-1 overflow-y-auto p-6 space-y-6">
-
-      <!-- Compact Metrics Strip -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="saas-panel p-4">
-          <div class="text-xs text-zinc-400 font-medium">Matched Hourly Events</div>
-          <div id="kpi-user-events" class="text-xl font-semibold text-zinc-100 font-mono mt-1.5">--</div>
-          <div class="text-[11px] text-zinc-500 mt-1">From <span id="kpi-events">--</span> global stream</div>
-        </div>
-        <div class="saas-panel p-4">
-          <div class="text-xs text-zinc-400 font-medium">Incremental Spark Latency</div>
-          <div class="flex items-baseline gap-2 mt-1.5">
-            <span id="kpi-latency" class="text-xl font-semibold text-emerald-400 font-mono">--</span>
-            <span id="kpi-speedup" class="text-xs font-mono text-emerald-500">--</span>
-          </div>
-          <div id="last-updated" class="text-[11px] text-zinc-500 mt-1">--</div>
-        </div>
-        <div class="saas-panel p-4">
-          <div class="text-xs text-zinc-400 font-medium">Silver Layer Bot Filter</div>
-          <div id="kpi-bots" class="text-xl font-semibold text-zinc-100 font-mono mt-1.5">--</div>
-          <div class="text-[11px] text-zinc-500 mt-1">Deduplicated via event_id</div>
-        </div>
-        <div class="saas-panel p-4">
-          <div class="text-xs text-zinc-400 font-medium">Active Interest Tags</div>
-          <div id="kpi-tag-count" class="text-xl font-semibold text-indigo-400 font-mono mt-1.5">0 Tags</div>
-          <div class="text-[11px] text-zinc-500 mt-1">Feeds Spark ALS Recommender</div>
-        </div>
-      </section>
-
-      <!-- Top ALS Recommendations Row -->
-      <section class="space-y-2.5">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Recommended Breakouts</h2>
-            <span class="text-[11px] text-zinc-500">· Ranked by tag affinity &amp; Spark MLlib ALS</span>
-          </div>
-        </div>
-        <div id="als-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-      </section>
-
-      <!-- Main Split: Repository Table (7 cols) + Time-Series Forecast Inspector (5 cols) -->
-      <section class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-
-        <!-- Left Table -->
-        <div class="xl:col-span-7 saas-panel overflow-hidden">
-          <div class="px-4 py-3 border-b border-[#1f232b] flex items-center justify-between">
-            <span id="table-heading" class="text-xs font-semibold text-zinc-200">Emerging Repositories</span>
-            <span class="text-[11px] font-mono text-zinc-500">Click row to inspect forecast</span>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="border-b border-[#1f232b] text-[11px] text-zinc-500 font-medium bg-[#0d0f14]">
-                  <th class="py-2.5 pl-4 pr-2 w-8"></th>
-                  <th class="py-2.5 px-3">Repository</th>
-                  <th class="py-2.5 px-3 text-right">24h Stars</th>
-                  <th class="py-2.5 px-3 text-right">Z-Velocity</th>
-                  <th class="py-2.5 px-3">Signal</th>
-                  <th class="py-2.5 pl-3 pr-4 text-right">7d Forecast</th>
-                </tr>
-              </thead>
-              <tbody id="leaderboard-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Right Forecast Inspector -->
-        <div class="xl:col-span-5 saas-panel p-5 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-[11px] font-mono text-indigo-400">Spark MLlib GBTRegressor</span>
-              <span id="inspector-lang" class="text-[11px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded"></span>
-            </div>
-            <h3 id="selected-repo-title" class="text-base font-semibold text-zinc-100 mt-1.5">Select a repository</h3>
-            <p id="selected-repo-desc" class="text-xs text-zinc-400 mt-1 leading-relaxed"></p>
-
-            <div class="grid grid-cols-3 gap-2 my-4 p-2.5 rounded-lg bg-[#09090b] border border-[#1f232b] text-center">
-              <div>
-                <div class="text-[10px] text-zinc-500">7d Baseline</div>
-                <div id="insp-baseline" class="text-xs font-mono font-semibold text-zinc-200 mt-0.5">--</div>
-              </div>
-              <div>
-                <div class="text-[10px] text-zinc-500">24h Forks</div>
-                <div id="insp-forks" class="text-xs font-mono font-semibold text-zinc-200 mt-0.5">--</div>
-              </div>
-              <div>
-                <div class="text-[10px] text-zinc-500">24h Pushes</div>
-                <div id="insp-pushes" class="text-xs font-mono font-semibold text-zinc-200 mt-0.5">--</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="h-56 relative">
-            <canvas id="forecastChart"></canvas>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- System Telemetry & Stream Analytics Row -->
-      <section class="grid grid-cols-1 lg:grid-cols-2 gap-5 pb-6">
-        <div class="saas-panel p-5">
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <h3 class="text-xs font-semibold text-zinc-200">GH Archive Stream Composition</h3>
-              <p class="text-[11px] text-zinc-500">Hourly event share vs. multi-signal momentum weights</p>
-            </div>
-          </div>
-          <div class="h-52 relative"><canvas id="eventDistChart"></canvas></div>
-        </div>
-
-        <div class="saas-panel p-5">
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <h3 class="text-xs font-semibold text-zinc-200">Lakehouse Execution Benchmark</h3>
-              <p class="text-[11px] text-zinc-500">Full historical JSON scan vs. Incremental Silver-to-Gold Parquet merge</p>
-            </div>
-          </div>
-          <div class="h-52 relative"><canvas id="benchmarkChart"></canvas></div>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <!-- Discord-Style First-Time User Onboarding Modal ("Channels & Interests") -->
-  <div id="onboarding-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="saas-panel max-w-2xl w-full overflow-hidden shadow-2xl border border-[#2a2f3d]">
-
-      <div class="px-6 pt-6 pb-4 border-b border-[#1f232b] bg-[#0d0f14]">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[11px] font-mono uppercase tracking-wider text-indigo-400">Welcome to GitPulse · Cold-Start Setup</span>
-          <span id="onboarding-match-preview" class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
-            Select tags to preview stream
-          </span>
-        </div>
-        <h2 class="text-lg font-semibold text-zinc-100">Customize your developer intelligence feed</h2>
-        <p class="text-xs text-zinc-400 mt-1 leading-relaxed">
-          Since we haven't tracked your historical footprint in GH Archive yet, pick the ecosystems and signals you care about. We'll initialize your Gold feed immediately while Spark scans your background activity.
-        </p>
+      <div id="empty-state" class="empty-box hidden">
+        <div class="section-heading">No matching repositories</div>
+        <p class="section-hint">Try selecting another channel pill above or adding more tags.</p>
+        <button type="button" onclick="openOnboardingModal()" class="btn-auth-secondary">Customize Channels &amp; Tags</button>
       </div>
+    </section>
 
-      <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-        <div>
-          <div class="flex items-center justify-between mb-2.5">
-            <label class="text-xs font-semibold text-zinc-200">1. Which ecosystems &amp; languages do you follow?</label>
-            <span class="text-[11px] text-zinc-500">Pick 1 or more</span>
-          </div>
-          <div id="onboarding-tags-grid" class="flex flex-wrap gap-2"></div>
-        </div>
+  </main>
 
-        <div>
-          <div class="flex items-center justify-between mb-2.5">
-            <label class="text-xs font-semibold text-zinc-200">2. What kind of repository signals should we prioritize?</label>
-            <span class="text-[11px] text-zinc-500">Optional</span>
-          </div>
-          <div id="onboarding-goals-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
-        </div>
-      </div>
-
-      <div class="px-6 py-4 border-t border-[#1f232b] bg-[#0d0f14] flex items-center justify-between">
-        <button type="button" onclick="skipOnboardingDefault()" class="text-xs text-zinc-400 hover:text-zinc-200">
-          Skip with defaults
-        </button>
-        <button id="onboarding-save-btn" type="button" onclick="saveOnboardingChoices()"
-          class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 h-9 rounded-lg text-xs transition shadow-sm">
-          Finish &amp; Build My Feed →
-        </button>
-      </div>
-
-    </div>
-  </div>
+  <!-- Shared Modals Container (Onboarding + Repo Forecast Modal) -->
+  <div id="shared-modals"></div>
 
   <script src="./js/api.js"></script>
   <script src="./js/charts.js"></script>

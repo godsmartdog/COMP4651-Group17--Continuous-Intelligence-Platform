@@ -82,7 +82,7 @@ class SslContext(unittest.TestCase):
             return context
 
         def is_file(self):
-            return str(self) == "/etc/ssl/cert.pem"
+            return self.as_posix() == "/etc/ssl/cert.pem"
 
         with (
             patch.object(gh.ssl, "get_default_verify_paths", return_value=missing),

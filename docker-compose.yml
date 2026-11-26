@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gitpulse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gitpulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gitpulse_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-gitpulse_catalog}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./3_database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gitpulse} -d ${POSTGRES_DB:-gitpulse_catalog}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./2_backend_api
+      dockerfile: Dockerfile
+    container_name: gitpulse-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-gitpulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gitpulse_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-gitpulse_catalog}
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data_lakehouse:/app/data_lakehouse:ro
+
+  spark-pipeline:
+    build:
+      context: ./4_spark_pipeline
+      dockerfile: Dockerfile
+    container_name: gitpulse-spark
+    profiles: ["offline-jobs"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-gitpulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gitpulse_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-gitpulse_catalog}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    volumes:
+      - ./4_spark_pipeline:/workspace/4_spark_pipeline
+      - ./data_lakehouse:/workspace/data_lakehouse
+      - ./1_frontend/js:/workspace/frontend_snapshot
+
+volumes:
+  postgres_data:
